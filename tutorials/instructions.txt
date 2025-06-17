@@ -1,0 +1,14 @@
+
+tutorial 1
+conda create -n python_env python=3.10
+conda activate python_env
+pip install opencv-python
+python tutorial1.py
+
+tutorial 2
+pip install mediapipe
+python tutorial2.py --source "dance.mp4"
+python tutorial2.py --source webcam
+
+tutorial 3
+python tutorial3.py --img_id 785con
