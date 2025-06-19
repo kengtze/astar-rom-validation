@@ -12,3 +12,17 @@ python tutorial2.py --source webcam
 
 tutorial 3
 python tutorial3.py --img_id 785con
+
+tutorial 4
+
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+conda install conda-forge::tqdm
+
+CUDA_VISIBLE_DEVICES="" python tutorial4.py --mode debug
+CUDA_VISIBLE_DEVICES="" python tutorial4.py --mode test --img_id 785
+
+CUDA_VISIBLE_DEVICES="" python tutorial4.py --mode train
+CUDA_VISIBLE_DEVICES="" python tutorial4.py --mode test
+
+# --mode debug trains and tests on only a single image to make sure no bugs are present
+# CUDA_VISIBLE_DEVICES="" forces the program to use CPU
