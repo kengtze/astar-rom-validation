@@ -1,12 +1,19 @@
 import cv2
 import mediapipe as mp
 import argparse
+import numpy as np
+
+# Optional Kinect import
+try:
+    import freenect
+except ImportError:
+    freenect = None
 
 # ----------------------------
 # Command-line argument parsing
 # ----------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('--source', type=str, default='webcam', help="Set to 'webcam' or path to video file (e.g. dance.mp4)")
+parser.add_argument('--source', type=str, default='webcam', help="Options: 'webcam', 'kinect', or path to video file")
 args = parser.parse_args()
 
 # ----------------------------
@@ -39,18 +46,6 @@ JOINT_NAMES = {
 }
 
 # ----------------------------
-# Open video or webcam
-# ----------------------------
-if args.source.lower() == 'webcam':
-    cap = cv2.VideoCapture(0)
-else:
-    cap = cv2.VideoCapture(args.source)
-# Check if the video source is opened successfully, if not, print an error message and exit.
-if not cap.isOpened():
-    print(f"Error: Could not open source: {args.source}")
-    exit()
-
-# ----------------------------
 # Function to draw the skeleton (circles for joints, lines for connections) on a video frame
 # ----------------------------
 def draw_custom_skeleton(img, landmarks, connections):
@@ -72,25 +67,59 @@ def draw_custom_skeleton(img, landmarks, connections):
         cv2.line(img, pt1, pt2, (255, 0, 0), 2) # Draws a blue line between the two connected joints (pt1, pt2) with thickness 2
 
 # ----------------------------
+# Kinect helper functions
+# ----------------------------
+def get_kinect_rgb():
+    frame, _ = freenect.sync_get_video()
+    return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+def get_kinect_depth():
+    depth_frame, _ = freenect.sync_get_depth()
+    return cv2.convertScaleAbs(depth_frame, alpha=0.03)  # Normalize for display
+
+# ----------------------------
+# Open video or webcam
+# ----------------------------
+if args.source.lower() == 'kinect':
+    if freenect is None:
+        print("Error: freenect module not found. Install libfreenect's Python bindings.")
+        exit()
+    cap = None
+elif args.source.lower() == 'webcam':
+    cap = cv2.VideoCapture(0)
+else:
+    cap = cv2.VideoCapture(args.source)
+
+
+# ----------------------------
 # Main loop
 # ----------------------------
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("End of stream or error.")
-        break
+    if args.source.lower() == 'kinect':
+        rgb_frame = get_kinect_rgb()
+        depth_display = get_kinect_depth()
+    else:
+        ret, rgb_frame = cap.read()
+        if not ret:
+            print("End of stream or error.")
+            break
+        depth_display = None
 
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert the frame from BGR (OpenCV's format) to RGB format (MediaPipe's required format)
+    frame_rgb = cv2.cvtColor(rgb_frame, cv2.COLOR_BGR2RGB) # Convert the frame from BGR (OpenCV's format) to RGB format (MediaPipe's required format)
     results = pose.process(frame_rgb) # Runs MediaPipe's pose model on the RGB frame to detect landmarks
 
     # if landmarks are detected, calls draw_custom_skeleton to draw joints and connections on the original BGR frame
     if results.pose_landmarks:
-        draw_custom_skeleton(frame, results.pose_landmarks, POSE_CONNECTIONS)
+        draw_custom_skeleton(rgb_frame, results.pose_landmarks, POSE_CONNECTIONS)
 
-    cv2.imshow(f"Pose Estimation - {args.source}", frame) # Displays the frame in a window titled "Pose Estimation - {source}"
+    cv2.imshow(f"Pose Estimation - {args.source}", rgb_frame) # Displays the frame in a window titled "Pose Estimation - {source}"
+
+    if depth_display is not None:
+        cv2.imshow("Kinect Depth Feed (Grayscale)", depth_display)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
+if cap:
+    cap.release()
 cv2.destroyAllWindows()

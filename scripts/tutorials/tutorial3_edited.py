@@ -16,9 +16,11 @@ img_id = args.img_id # Extracts the img_id from the parsed arguments, which is e
 # ---------------------------
 # Paths and Files
 # ---------------------------
+base_path= "/home/lkt/Projects/data/coco_dataset"
+
 img_filename = f"{img_id:012d}.jpg"
-img_path = f"./coco_dataset/val2017/{img_filename}" # Constructs file path to the image using the img_id, ensuring it is zero-padded to 12 digits (e.g., 000000000785.jpg).
-ann_path = "./coco_dataset/annotations_trainval2017/annotations/person_keypoints_val2017.json" # Defines the path to the COCO annotations JSON file containing keypoint data (joint positions and bounding boxes)
+img_path = os.path.join(base_path, "val2017", img_filename)
+ann_path = os.path.join(base_path, "annotations_trainval2017", "annotations", "person_keypoints_val2017.json")
 
 # ---------------------------
 # Load Image
